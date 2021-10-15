@@ -1,0 +1,177 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div
+      style="
+        display: table;
+        margin-right: auto;
+        margin-left: auto;
+        margin-top: 350;
+      "
+    >
+      <h1 id="userBalance"></h1>
+      <form>
+        <label for="amount">Amount in Ether: </label
+        ><input type="number" value="amount" id="amount" /> <br />
+        <div style="margin-top: 13">
+          <button type="button" onclick="transfer()" style="font-size: 21px">
+            Transfer
+          </button>
+          <button type="button" onclick="deposit()" style="font-size: 21px">
+            Deposit
+          </button>
+          <button type="button" onclick="withdraw()" style="font-size: 21px">
+            Withdraw
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <script
+      src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+      type="application/javascript"
+    ></script>
+    <script>
+      var provider;
+      var contractInstance;
+      var contractInstanceWithSignature;
+      var account;
+      var signer;
+      var everyThingOK = false;
+
+      async function getVars() {
+        if (window.ethereum !== undefined) {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+        } else {
+          window.alert("Please install Metamask!");
+        }
+
+        if (provider) {
+          await provider.getNetwork().then( async(res) => {
+            let currentChainId = res.chainId;
+            if(currentChainId == 31337) {
+              let _accounts = await provider.send("eth_requestAccounts", []);
+              account = _accounts[0];
+              signer = provider.getSigner();
+
+              contractInstance = new ethers.Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", abi, provider);
+              contractInstanceWithSignature = new ethers.Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", abi, signer);
+
+              await getBalance(account).then((_balance) => {
+                document.getElementById("userBalance").innerHTML = "Your balance is: " + _balance;
+              })
+
+              everyThingOK = true;
+            } else {
+              window.alert("Please change to local hardhat network!")
+            }
+          })
+        }
+
+      }
+
+      getVars();
+
+
+      function getAmount() {
+        return document.getElementById("amount").value;
+      }
+
+      async function transfer() {
+        if(everyThingOK) {
+          let amount = getAmount();
+          await contractInstanceWithSignature.transfer(amount);
+        }
+      }
+
+      async function deposit() {
+        if(everyThingOK) {
+          let amount = getAmount();
+          await contractInstanceWithSignature.deposit({value: amount});
+        }
+      }
+
+      async function withdraw() {
+        if(everyThingOK) {
+          let amount = getAmount();
+          await contractInstanceWithSignature.withdraw(amount);
+        }
+      }
+
+      async function getBalance(_account) {
+        let _userBalance = await contractInstance.balances(_account);
+        return _userBalance;
+      }
+
+      const abi = [
+        {
+          inputs: [],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          name: "balances",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "deposit",
+          outputs: [],
+          stateMutability: "payable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_amount",
+              type: "uint256",
+            },
+            {
+              internalType: "address",
+              name: "_to",
+              type: "address",
+            },
+          ],
+          name: "transfer",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_amount",
+              type: "uint256",
+            },
+          ],
+          name: "withdraw",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ];
+    </script>
+  </body>
+</html>
